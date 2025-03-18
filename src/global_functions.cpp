@@ -860,6 +860,86 @@ void traj_data(ofstream &ftraj,Packet *combus,int num_vehicles,bool merge)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+//Writing data to 'Output/xx.acmi'
+//
+// Longitude | Latitude | Altitude | Roll | Pitch | Yaw
+//								   |      | tht   | psi
+//130325 Created by CBS
+///////////////////////////////////////////////////////////////////////////////
+
+void acmi_data(ofstream& facmi, Packet* combus, int num_vehicles, double sim_time) {
+	const char* integer = NULL;
+	const char* vector = NULL;
+	Matrix VEC(3, 1);
+	Variable* data = NULL;
+	int ndata(0);
+	string id;
+	int status(1);		//alive=1, dead=0. hit=-1 
+	int cruise_object(0);
+	int target_object(0);
+	int satellite_object(0);
+	double acmi[5] = { 0 }; // lon lat alt pitch roll
+
+	facmi.setf(ios::left);
+
+	//first data entry is 'time'
+	Variable* data_c1 = combus[0].get_data();
+	double time = data_c1[0].real();
+
+	//packets are stored in 'combus' (except for 'time')
+	for (int i = 0;i < num_vehicles;i++) {
+		//determining whether 'Cruise','Target' or 'Satellite' object
+		id = combus[i].get_id();
+		status = combus[i].get_status();
+		cruise_object = (int)id.find("c");
+		target_object = (int)id.find("t");
+		satellite_object = (int)id.find("s");
+		if (!cruise_object)	{
+			if (status != 1) {
+				facmi << "-" << 100 + i;
+			}
+			else {
+				data = combus[i].get_data();
+				facmi << 100 + i << ",T=";
+				facmi << data[2].real() << "|" << data[3].real() << "|" << data[4].real() << "|";
+				facmi << "|" << data[7].real() << "|" << data[6].real();
+				if (sim_time < 0.001)
+					facmi << ",Name=YJ-7 (C-701),Color=Red,Pilot=" << id;
+			}
+		}
+		else if (!target_object) {
+			if (status != 1) {
+				facmi << "-" << 200 + i;
+			}
+			else {
+				data = combus[i].get_data();
+				facmi << 200 + i << ",T=";
+				facmi << data[2].real() << "|" << data[3].real() << "|" << data[4].real() << "|";
+				facmi << "|" << data[7].real() << "|" << data[6].real();
+				if (sim_time < 0.001)
+					facmi << ",Name=Arleigh Burke,Color=Blue,Pilot=" << id;
+			}
+		}
+		else if (!satellite_object)
+		{
+			if (status != 1) {
+				facmi << "-" << 300 + i;
+			}
+			else {
+				data = combus[i].get_data();
+				facmi << 300 + i << ",T=";
+				facmi << data[2].real() << "|" << data[3].real() << "|" << data[4].real() << "|";
+				facmi << "|" << data[7].real() << "|" << data[6].real();
+				if (sim_time < 0.001)
+					facmi << ",Name=Navstar,Color=Red,Pilot=" << id;
+			}
+		}
+		facmi << "\n";
+	}
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 //Writing 'combus' data to screen
 //
 //010213 Created by Peter Zipfel

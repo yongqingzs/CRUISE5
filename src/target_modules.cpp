@@ -135,7 +135,7 @@ void Target::def_intercept()
 //010420 Created by Peter H Zipfel
 ///////////////////////////////////////////////////////////////////////////////
 
-void Target::intercept(Packet *combus,int vehicle_slot,double int_step,const char *title)
+void Target::intercept(Packet *combus,int vehicle_slot,double int_step,const char *title, ofstream& facmi)
 {
 	//local module-variables
 	int targ_health(0);

@@ -683,7 +683,7 @@ void Cruise::def_seeker()
 //		
 //010221 Created by Peter H Zipfel
 ///////////////////////////////////////////////////////////////////////////////	
-void Cruise::seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target)
+void Cruise::seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target, ofstream& facmi)
 {
 	//local variables
 	double range(0);
@@ -774,6 +774,9 @@ void Cruise::seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_tar
 				//writing seeker acquisition message to console
 				cout<<"\n"<<" *** Acquisition by Missile_"<<id_missl<<" of Target_"<<target_id
 					<<" at time = "<<time<<" sec ***\n\n";
+
+				facmi << "0,Event=Message|" << 100 + vehicle_slot << "|Acquisition by Missile_" << id_missl << " of Target_" << target_id
+					<< " at time = " << time << "sec\n";
 			}
 		}
 	}//acquisition has occurred and target-packet slot # is identified in 'combus'
@@ -2087,7 +2090,7 @@ void Cruise::def_intercept()
 //
 //010328 Created by Peter H Zipfel
 ///////////////////////////////////////////////////////////////////////////////
-void Cruise::intercept(Packet *combus,int vehicle_slot,double int_step,const char *title)
+void Cruise::intercept(Packet *combus,int vehicle_slot,double int_step,const char *title, ofstream& facmi)
 {
 	//local variables
 	double tau(0);
@@ -2142,6 +2145,9 @@ void Cruise::intercept(Packet *combus,int vehicle_slot,double int_step,const cha
 		cout<<"\n"<<" *** Ground impact of Missile_"<<id_missl<<"   Time = "<<time<<" sec ***\n";
 		cout<<"      speed = "<<dvbe<<" m/s  heading = "<<psivgx<<" deg      gamma = "<<thtvgx<<" deg\n\n";    
 
+		facmi << "0,Event=Message|" << 100 + vehicle_slot << "|Ground impact of Missile_" << id_missl << " Time = " << time << "sec ";
+		facmi << " speed = " << dvbe << "m/s heading = " << psivgx << "deg gamma = " << thtvgx << "deg\n";
+
 		//declaring cruise missile 'dead'
 		combus[vehicle_slot].set_status(0);
 	}
@@ -2163,6 +2169,11 @@ void Cruise::intercept(Packet *combus,int vehicle_slot,double int_step,const cha
 				<<wp_lonx<<" deg, latitude = "<<wp_latx<<" deg at time = "<<time<<" sec *** \n";
 			cout<<"      SWBG-horizontal miss distance  = "<<dwbh<<" m north = "<<SWBG.get_loc(0,0)
 				<<" m  east = "<<SWBG.get_loc(1,0)<<" m\n";   
+
+			facmi << "0,Event=Message|" << 100 + vehicle_slot << "|Missile_" << id_missl << " overflies waypoint at longitude = "
+				<< wp_lonx << "deg latitude = " << wp_latx << "deg at time = " << time << "sec ";
+			facmi << "and SWBG-horizontal miss distance = " << dwbh << "m north = " << SWBG.get_loc(0, 0)
+				<< "m east = " << SWBG.get_loc(1, 0) << "m\n";
 		}
 	}
 	//Terminal line/line or point/line guidance
@@ -2186,6 +2197,14 @@ void Cruise::intercept(Packet *combus,int vehicle_slot,double int_step,const cha
 			cout<<"      north = "<<SWBG.get_loc(0,0)<<" m      east = "<<SWBG.get_loc(1,0)
 							<<" m        down = "<<SWBG.get_loc(2,0)<<" m\n";
 			cout<<"      speed = "<<dvbe<<" m/s heading = "<<psivgx<<" deg     gamma = "<<thtvgx<<" deg\n\n";    
+
+			facmi << "0,Event=Message|" << 100 + vehicle_slot << "|Impact of Missile_" << id_missl << " on waypoint coord.: longitude = " << wp_lonx << "deg latitude = "
+				<< wp_latx << "deg altitude = " << wp_alt << "m";
+			facmi << " miss distance = " << miss << "m intercept time = " << time << "sec";
+			facmi << " north = " << SWBG.get_loc(0, 0) << "m east = " << SWBG.get_loc(1, 0)
+				<< "m down = " << SWBG.get_loc(2, 0) << "m";
+			facmi << " speed = " << dvbe << "m/s heading = " << psivgx << "deg gamma = " << thtvgx << "deg\n";
+
 
 			//declaring cruise missile 'dead'
 			combus[vehicle_slot].set_status(0);
@@ -2238,6 +2257,13 @@ void Cruise::intercept(Packet *combus,int vehicle_slot,double int_step,const cha
 								<<" m        down = "<<MISS_G.get_loc(2,0)<<" m\n";
 				cout<<"      speed = "<<dvbe<<" m/s heading = "<<psivgx<<" deg     gamma = "<<thtvgx<<" deg\n\n";    
 				
+				facmi << "0,Event=Message|" << 100 + vehicle_slot << "|Intercept of Missile_" << id_missl << " and Target_" << id_targ;
+				facmi << " miss distance = " << miss << "m intercept time = " << hit_time << "sec";
+				facmi << " north = " << MISS_G.get_loc(0, 0) << "m east = " << MISS_G.get_loc(1, 0)
+					<< " m down = " << MISS_G.get_loc(2, 0) << "m";
+				facmi << " speed = " << dvbe << "m/s heading = " << psivgx << "deg gamma = " << thtvgx << "deg\n";
+
+
 				//declaring cruise missile 'dead (0)'and target 'hit (-1)'
 				combus[targ_com_slot].set_status(-1);
 				combus[vehicle_slot].set_status(0);

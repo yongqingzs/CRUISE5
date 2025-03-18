@@ -1,1 +1,5 @@
 build/
+doc.asc
+traj.asc
+input_copy.asc
+**.acmi

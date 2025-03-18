@@ -44,7 +44,7 @@ void execute(Vehicle &vehicle_list,Module *module_list,double sim_time,
 			 double end_time,int num_vehicles,int num_modules,double plot_step,
 			 double int_step,double scrn_step,double com_step,double traj_step,const char *options,
 			 ofstream &ftabout,ofstream *plot_ostream_list,Packet *combus,int *status,
-			 int num_cruise,int num_target,int num_satellite,ofstream &ftraj,const char *title,bool traj_merge);
+			 int num_cruise,int num_target,int num_satellite,ofstream &ftraj,const char *title,bool traj_merge, ofstream& facmi);
 
 // saving status of 'combus' vehicle objects
 void combus_status(Packet *combus,int *status,int num_vehicles);
@@ -65,6 +65,9 @@ void traj_banner(ofstream &ftraj,Packet *combus,const char *title,int num_vehicl
 
 //writing 'traj.asc' file of 'combus' data
 void traj_data(ofstream &ftraj,Packet *combus,int num_vehicles,bool merge);
+
+//writing 'Output/xx.acmi' file
+void acmi_data(ofstream& facmi, Packet* combus, int num_vehicles, double sim_time);
 
 //Documenting 'input.asc' with module-variable definitions
 void document_input(Document *doc_cruise3,Document *doc_target3,Document *doc_satellite3);
@@ -118,7 +121,6 @@ int main(void)
 	///////////////////////////////////////////////////////////////////////////
 
 	//creating an input stream object and opening 'input.asc' file
-	// 在 main() 函数内，文件打开之前添加以下代码
 	// 获取当前工作目录
 	char current_dir[PATH_MAX];
 	if (getcwd(current_dir, sizeof(current_dir)) == NULL) {
@@ -129,11 +131,12 @@ int main(void)
 	cout << "Current working directory: " << input_dir << endl;
 
 	// 修改文件打开方式，使用路径拼接
-	string input_path = input_dir + "/input.asc";
+	// string input_path = input_dir + "/input.asc";
+	string input_path = input_dir + "/input_3_3_3.asc";
 	string tabout_path = input_dir + "/tabout.asc";
 	string doc_path = input_dir + "/doc.asc";
 	string traj_path = input_dir + "/traj.asc";
-	string input_copy_path = input_dir + "/input_copy.asc";
+	// string input_copy_path = input_dir + "/input_copy.asc";
 
 	// 创建文件流对象并打开文件
 	fstream input(input_path.c_str());
@@ -160,12 +163,22 @@ int main(void)
 		exit(1);
 	}
 
-	ofstream fcopy(input_copy_path.c_str());
-	if(!fcopy) {
-		cout << " *** Error: cannot open '" << input_copy_path << "' file *** \n";
-		exit(1);
-	}
-	// ...existing code...
+	// ofstream fcopy(input_copy_path.c_str());
+	// if(!fcopy) {
+	// 	cout << " *** Error: cannot open '" << input_copy_path << "' file *** \n";
+	// 	exit(1);
+	// }
+	
+	// CBS 250313 for filename related to local time
+	time_t now = time(NULL);
+	struct tm* local_time = localtime(&now);
+	char filename[256] = { 0 };
+	string output_dir = string(current_dir) + "/../output";
+	strftime(filename, sizeof(filename), "/%y%m%d-%H%M.acmi", local_time);
+	string acmi_path = output_dir + filename;
+
+	ofstream facmi(acmi_path);
+	if (!facmi) { cout << " *** Error: cannot create output/xx.acmi file *** \n";exit(1); }
 
 	//initializing flags
 	bool one_screen_banner=true; //write just one banner on screen
@@ -349,15 +362,28 @@ int main(void)
 		traj_data(ftraj,combus,num_vehicles,traj_merge);
 	}
 		//Aquire ending time (last entry on 'input.asc')
-		end_time=acquire_endtime(input);
+	end_time=acquire_endtime(input);
 
-		if(strstr(options,"y_doc")){
-			//documenting input.asc (only once)
-			document_input(doc_cruise3,doc_target3,doc_satellite3);
-			if(document_cruise3)delete [] doc_cruise3;
-			if(document_target3)delete [] doc_target3;
-			if(document_satellite3)delete [] doc_satellite3;
-		}
+	if(strstr(options,"y_doc")){
+		//documenting input.asc (only once)
+		document_input(doc_cruise3,doc_target3,doc_satellite3);
+		if(document_cruise3)delete [] doc_cruise3;
+		if(document_target3)delete [] doc_target3;
+		if(document_satellite3)delete [] doc_satellite3;
+	}
+
+	///////////////////////////////////////////////////////////////////////////////	
+	/////////////////////// ACMI FILE INIT ////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////	
+
+	if (strstr(options, "y_acmi")) {
+		facmi << "FileType=text/acmi/tacview" << "\n";
+		facmi << "FileVersion=2.2" << "\n";
+		facmi << "0,ReferenceTime=2025-04-01T00:00:00Z" << "\n";
+		facmi << "#0" << "\n";
+		acmi_data(facmi, combus, num_vehicles, 0);
+	}
+
 	///////////////////////////////////////////////////////////////////////////////	
 	/////////////////////// Simulation Execution //////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////	
@@ -366,7 +392,7 @@ int main(void)
 			 end_time,num_vehicles,num_modules,plot_step,
 			 int_step,scrn_step,com_step,traj_step,options,ftabout,
 			 plot_ostream_list,combus,status,num_cruise,num_target,num_satellite,ftraj,title,
-			 traj_merge);
+			 traj_merge,facmi);
 
 	//Deallocate dynamic memory
 	delete [] module_list;
@@ -379,7 +405,7 @@ int main(void)
 
 	//Close input file streams
 	input.close();
-	fcopy.close();
+	// fcopy.close();
 
 	//Close file streams
 	ftabout.close();
@@ -466,7 +492,7 @@ void execute(Vehicle &vehicle_list,Module *module_list,double sim_time,
 			 double end_time,int num_vehicles,int num_modules,double plot_step,
 			 double int_step,double scrn_step,double com_step,double traj_step,const char *options,
 			 ofstream &ftabout,ofstream *plot_ostream_list,Packet *combus,int *status,
-			 int num_cruise,int num_target,int num_satellite,ofstream &ftraj,const char *title,bool traj_merge)
+			 int num_cruise,int num_target,int num_satellite,ofstream &ftraj,const char *title,bool traj_merge, ofstream& facmi)
 {
 	double scrn_time(0);
 	double plot_time(0);
@@ -481,6 +507,10 @@ void execute(Vehicle &vehicle_list,Module *module_list,double sim_time,
 	//integration loop
 	while (sim_time<=(end_time+int_step))
 	{
+		// ACMI Begin
+		if (sim_time > 0.0001)
+			facmi << "#" << sim_time << "\n";	
+
 		//vehicle loop
 		for (int i=0;i<num_vehicles;i++)
 		{
@@ -512,13 +542,13 @@ void execute(Vehicle &vehicle_list,Module *module_list,double sim_time,
 					else if(module_list[j].name=="forces")
 						vehicle_list[i]->forces();
 					else if(module_list[j].name=="seeker")
-						vehicle_list[i]->seeker(combus,vehicle_slot,num_vehicles,num_target);
+						vehicle_list[i]->seeker(combus,vehicle_slot,num_vehicles,num_target,facmi);
 					else if(module_list[j].name=="control") 
 						vehicle_list[i]->control(int_step);
 					else if(module_list[j].name=="guidance")
 						vehicle_list[i]->guidance();
 					else if(module_list[j].name=="intercept")
-						vehicle_list[i]->intercept(combus,vehicle_slot,int_step,title);
+						vehicle_list[i]->intercept(combus,vehicle_slot,int_step,title,facmi);
 					else if(module_list[j].name=="targeting")
 						vehicle_list[i]->targeting(combus,vehicle_slot,num_vehicles,num_target,num_satellite);
 				} //end of module loop
@@ -565,6 +595,15 @@ void execute(Vehicle &vehicle_list,Module *module_list,double sim_time,
 			}
 
 		} //end of vehicle loop
+
+		if (sim_time > 0.0001)
+		{
+			if (strstr(options, "y_acmi"))
+			{
+				acmi_data(facmi, combus, num_vehicles, sim_time);
+			}
+		}
+
 
 		//outputting 'combus' to screen 
 		if(fabs(com_time-sim_time)<(int_step/2+EPS))

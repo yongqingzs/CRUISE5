@@ -128,9 +128,9 @@ public:
 	virtual void targeting(Packet *combus,int vehicle_slot,int num_vehicles
 		,int num_target,int num_satellite)=0;
 	virtual void def_seeker()=0;
-	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target)=0;
+	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target, ofstream& facmi)=0;
 	virtual void def_intercept()=0;
-	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title)=0;
+	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title, ofstream& facmi)=0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,9 +199,9 @@ public:
 	virtual void targeting(Packet *combus,int vehicle_slot,int num_vehicles
 		,int num_target,int num_satellite)=0;
 	virtual void def_seeker()=0;
-	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target)=0;
+	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target, ofstream& facmi)=0;
 	virtual void def_intercept()=0;
-	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title)=0;
+	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title, ofstream& facmi)=0;
 
 	//virtual functions to be defined in this class
 	virtual void def_environment();
@@ -318,9 +318,9 @@ public:
 	virtual void targeting(Packet *combus,int vehicle_slot,int num_vehicles
 		,int num_target,int num_satellite);
 	virtual void def_seeker();
-	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target);
+	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target, ofstream& facmi);
 	virtual void def_intercept();
-	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title);
+	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title, ofstream& facmi);
 
 	//functions of control module
 	double control_heading(double psivgcx);
@@ -412,13 +412,13 @@ public:
 	virtual void targeting(Packet *combus,int vehicle_slot,int num_vehicles
 		,int num_target,int num_satellite){};
 	virtual void def_seeker(){};
-	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target){};
+	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target, ofstream& facmi){};
 
 	//module functions active
 	virtual void def_forces();
 	virtual void forces();
 	virtual void def_intercept();
-	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title);
+	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title, ofstream& facmi);
 };
 ///////////////////////////////////////////////////////////////////////////////
 //Derived class: Satellite
@@ -488,9 +488,9 @@ public:
 	virtual void targeting(Packet *combus,int vehicle_slot,int num_vehicles
 		,int num_target,int num_satellite){};
 	virtual void def_intercept(){};
-	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title){};
+	virtual void intercept(Packet *combus,int vehicle_slot,double int_step,const char *title, ofstream& facmi){};
 	virtual void def_seeker(){};
-	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target){};
+	virtual void seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_target, ofstream& facmi){};
 
 	//module functions active
 	virtual void def_forces();
