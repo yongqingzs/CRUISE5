@@ -353,6 +353,7 @@ void Round3::newton(double int_step)
 	TGI=TGE*TEI;
 
 	//calculating geographic velocity VBEG=TGI*(VBII-(WEII*SBII));
+	// 计算地理速度
 	VBEG_NEW=TGI*(VBII-(WEII*SBII));
 
 	//and integrating to obtain geographic displacement wrt initial launch point E
@@ -361,7 +362,7 @@ void Round3::newton(double int_step)
 	VBEG=VBEG_NEW;
 
 	//getting speed, heading and flight path angle
-	POLAR=VBEG.pol_from_cart();		
+	POLAR=VBEG.pol_from_cart();
 	dvbe=POLAR.get_loc(0,0);
 	psivg=POLAR.get_loc(1,0);
 	thtvg=POLAR.get_loc(2,0);

@@ -786,31 +786,36 @@ void Cruise::seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_tar
 	{
 		// getting data of target being tracked (tied to a special sequence in 'combus.data')
 		data_t=combus[targ_com_slot].get_data();
-		lonx_t=data_t[1].real();
-		latx_t=data_t[2].real();
-		alt_t=data_t[3].real();
+		lonx_t=data_t[2].real();
+		latx_t=data_t[3].real();
+		alt_t=data_t[4].real();
 		psivgx_t=data_t[6].real();
 		thtvgx_t=data_t[7].real();
 		VTEG=data_t[9].vec();
 		STII=data_t[10].vec();
 
 		//calculating relative cruise-target displacement in cruise geo. coord
+		// 将导弹和目标的相对位移转换到惯性系
 		STBI=STII-SBII;
 		TGI=TIG.trans();
 		STBG=TGI*STBI;
 
 		//calculating range-to-go
+		// 计算相对距离
 		range_go=STBG.absolute();
 
 		//calculating unit vector of LOS and converting to skew-symmetric form
+		// UTBG:STBG的单位向量形式，惯性系下的弹目相对位移
 		inv_dtb=1/range_go;
 		UTBG=STBG*inv_dtb;
 
 		//calculating LOS rate in body coordinates
+		// VTBG:地理速度之差 WOEB: 视线角速率
 		VTBG=VTEG-VBEG;
 		WOEB=TBG*UTBG.skew_sym()*VTBG*inv_dtb;
 
 		//calculating closing speed (pos if closing on target, otherwise negative)
+		// 计算接近速度（必须距离较近时）
 		VBTG=VTBG*(-1);
 		closing_speed=UTBG^VBTG;
 
@@ -818,6 +823,9 @@ void Cruise::seeker(Packet *combus,int vehicle_slot,int num_vehicles,int num_tar
 		time_go=range_go/closing_speed;
 
 		//LOS angles wrt body frame
+		// UTBB:机体系下相对位移 TBG:机体相对于地理坐标的变换矩阵
+		// POLAR:UTBB的极坐标形式
+		// psisbx:导引头方位角 thtsbx:导引头俯仰角
 		UTBB=TBG*UTBG;
 		POLAR=UTBB.pol_from_cart();
 		psisbx=POLAR.get_loc(1,0)*DEG;
@@ -1299,35 +1307,37 @@ Matrix Cruise::guidance_point()
 	double point_gain=cruise[90].real();
 	//input from other modules
 	double time=round3[0].real(); 
-	double grav=round3[11].real();
-	Matrix TIG=round3[23].mat();
-	double thtvgx=round3[29].real();
-	Matrix VBEG=round3[32].vec();
-	Matrix SBII=round3[35].vec();
-	double philimx=cruise[56].real();
+	double grav=round3[11].real();  // 重力加速度
+	Matrix TIG=round3[23].mat();  // 惯性坐标->地理坐标的转换矩阵
+	double thtvgx=round3[29].real();  // 速度俯仰角
+	Matrix VBEG=round3[32].vec();  // 地理速度
+	Matrix SBII=round3[35].vec();  // 当前惯性位置
+	double philimx=cruise[56].real();  // 倾斜角限制
 	//-------------------------------------------------------------------------
 	//converting waypoint to inertial coordinates
-	SWII=cadine(wp_lonx*RAD,wp_latx*RAD,wp_alt,time);
+	SWII=cadine(wp_lonx*RAD,wp_latx*RAD,wp_alt,time);  // 将航路点转换为惯性坐标
 
 	//waypoint wrt cruise missile displacement in geographic coord (synthetic LOS)
-	SWBG=TIG.trans()*(SWII-SBII);
+	SWBG=TIG.trans()*(SWII-SBII);  // 航路点相对于巡航导弹在地理坐标中的位移（合成 LOS） trans:矩阵转置
 
 	//building TM of LOS wrt geographic axes; also getting range-to-go to waypoint
-	POLAR=SWBG.pol_from_cart();
-	wp_sltrange=POLAR.get_loc(0,0);
-	psiog=POLAR.get_loc(1,0);
-	thtog=POLAR.get_loc(2,0);
-	TOG=mat2tr(psiog,thtog);
+	// LOS:视线坐标系
+	POLAR=SWBG.pol_from_cart();  // 将地理坐标中的位移从笛卡尔->极坐标
+	wp_sltrange=POLAR.get_loc(0,0);  // 航路点到导弹的距离
+	psiog=POLAR.get_loc(1,0);  // 航路点与导弹的视线方位角
+	thtog=POLAR.get_loc(2,0);  // 航路点与导弹的视线俯仰角
+	TOG=mat2tr(psiog,thtog);  // 返回一个旋转矩阵
 
 	//ground range to waypoint (approximated by using cruise missile local-level plane)
+	//地理坐标系下的相对位移
 	swbg1=SWBG.get_loc(0,0);
 	swbg2=SWBG.get_loc(1,0);
 	wp_grdrange=sqrt(swbg1*swbg1+swbg2*swbg2);
 
 	//converting geographic cruise missile velocity to LOS and LOA coordinates
-	VBEO=TOG*VBEG;
-	vbeo2=VBEO.get_loc(1,0);
-	vbeo3=VBEO.get_loc(2,0);
+	VBEO=TOG*VBEG;  // 将地理速度从地理—>视线坐标系
+	vbeo2=VBEO.get_loc(1,0);  // 视线y向速度
+	vbeo3=VBEO.get_loc(2,0);  // 视线z向速度
 
 	//point guidance steering law
 	apgv1=grav*sin(thtvgx*RAD);

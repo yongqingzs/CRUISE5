@@ -1245,6 +1245,14 @@ void Cruise::com_index_arrays()
 			l++;
 		}
 	}
+	// cout << "round3_com_ind: " << "(k=" << k << ") ";
+	// for (int i = 0; i < k; i++)
+	// 	cout << round3_com_ind[i] << " ";
+	// cout << endl;
+	// cout << "cruise_com_ind: " << "(l=" << l << ") ";
+	// for (int i = 0; i < l; i++)
+	// 	cout << cruise_com_ind[i] << " ";
+	// cout << endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
 //Initializing loading 'packet' with 'CRUISE3' data

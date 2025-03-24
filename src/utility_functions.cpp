@@ -162,6 +162,16 @@ void Matrix::assign_loc(const int &r, const int &c, const double &val)
 	*(pbody+offset)=val;	
 }
 
+void Matrix::set_vec2(const double &v1,const double &v2)
+{
+	if(num_row!=2||num_col!=1)
+	{cerr<<" *** Error: not a 2x1 vector 'Matrix::set_vec2()' *** \n";exit(1);}
+
+	*pbody=v1;
+	*(pbody+1)=v2;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 //Builds a 3x1 vector from three parameters
 //Example: VEC.build_vec3(v1,v2,v3);
@@ -812,7 +822,19 @@ double& Matrix::operator[](const int& r)
 	{
 		{cout << "*** Error: invalid matrix location,'Matrix::operator[]' *** "; system("pause"); exit(1); }
 	}
-}///////////////////////////////////////////////////////////////////////////////
+}
+
+double& Matrix::operator[](const int& r) const
+{
+	if ((r < num_row) && (num_col == 1))
+		return *(pbody + r);
+	else
+	{
+		{cout << "*** Error: invalid matrix location,'Matrix::operator[]' *** "; system("pause"); exit(1); }
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
 //Scalar product operator (any combination of row or column vectors)  
 //Example: value = AMAT ^ BMAT;  
 ///////////////////////////////////////////////////////////////////////////////

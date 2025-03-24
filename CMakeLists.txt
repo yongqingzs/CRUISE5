@@ -6,38 +6,33 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# 设置编译选项
-# if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-#     add_compile_options(-Wall -Wextra)
-# elseif(MSVC)
-#     add_compile_options(/W4)
-# endif()
 
 # 包含头文件目录
 include_directories(include)
 
 # 查找所有源文件
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+# file(GLOB_RECURSE SOURCES "src/*.cpp")
+set(SOURCES
+    src/class_functions.cpp
+    src/cruise_modules.cpp
+    src/execution.cpp 
+    src/round3_modules.cpp   
+    src/satellite_modules.cpp
+    src/target_modules.cpp
+    src/cruise_functions.cpp
+    src/global_functions.cpp
+    src/satellite_functions.cpp
+    src/target_functions.cpp
+    src/utility_functions.cpp
+)
+
+set(BEZIERS
+    src/bezier_demo.cpp
+    src/bezier_functions.cpp
+    src/utility_functions.cpp
+)
 
 # 创建可执行文件
 add_executable(Cruise5 ${SOURCES})
 
-# 链接库（如果有需要）
-# target_link_libraries(CRUISE5 PRIVATE some_library)
-
-# 安装目标
-# install(TARGETS CRUISE5 DESTINATION bin)
-
-# 复制数据文件到构建目录
-# file(GLOB DATA_FILES "data/*.asc")
-# foreach(DATA_FILE ${DATA_FILES})
-#     get_filename_component(FILE_NAME ${DATA_FILE} NAME)
-#     configure_file(${DATA_FILE} ${CMAKE_BINARY_DIR}/${FILE_NAME} COPYONLY)
-# endforeach()
-
-# 设置构建目录
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-# 添加测试（可选）
-# enable_testing()
-# add_test(NAME run_cruise5 COMMAND CRUISE5)
+add_executable(BezierDemo ${BEZIERS})

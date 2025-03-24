@@ -1,4 +1,7 @@
 build/
+tmp/
+.vscode/
+output/
 doc.asc
 traj.asc
 input_copy.asc

@@ -88,6 +88,9 @@ public:
 	//Example: MAT.assign_loc(r,c,val); ((r+1)th-row, (c+1)th-col)
 	void assign_loc(const int &r, const int &c, const double &val);
 
+	//Set 2d Vector's value
+	void set_vec2(const double &v1,const double &v2);
+
 	//Builds a 3x1 vector from three parameters
 	//Example: VEC.build_vec3(v1,v2,v3)
 	Matrix & build_vec3(const double &v1,const double &v2,const double &v3);
@@ -240,6 +243,8 @@ public:
 	//Returns the component(i) from vector VEC[i] or assigns a value to component VEC[i]
 	//Examples: comp_i=VEC[i]; VEC[i]=comp_i;
 	double & operator [](const int &r);
+	
+	double & operator [](const int &r) const;
 
 	//Scalar product operator (any combination of row or column vectors)  
 	//Example: value = AMAT ^ BMAT;  
