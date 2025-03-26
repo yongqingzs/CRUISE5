@@ -86,6 +86,16 @@ if __name__ == "__main__":
     
     # Call plotting function
     plot_bezier_curve(
-        curve_file='bezier_curve.txt',
-        control_points_file='bezier_curve_control_points.txt',
+        curve_file='bezier_curve_c0.txt',
+        control_points_file='bezier_curve_c0_control_points.txt',
+    )
+
+    plot_bezier_curve(
+        curve_file='bezier_curve_c1.txt',
+        control_points_file='bezier_curve_c1_control_points.txt',
+    )
+
+    plot_bezier_curve(
+        curve_file='bezier_curve_c2.txt',
+        control_points_file='bezier_curve_c2_control_points.txt',
     )

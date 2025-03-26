@@ -377,7 +377,7 @@ bool outputBezierCurvePoints(
     }
     
     outfile.close();
-    std::cout << "贝塞尔曲线点已输出到文件: " << filename << std::endl;
+    // std::cout << "贝塞尔曲线点已输出到文件: " << filename << std::endl;
     
     // 单独输出控制点到文件
     std::string control_points_file = filename.substr(0, filename.find_last_of('.')) + "_control_points.txt";
@@ -397,8 +397,211 @@ bool outputBezierCurvePoints(
         cp_outfile << "# r\n";
         cp_outfile << r << "\t" << 0 << std::endl;
         cp_outfile.close();
-        std::cout << "控制点已输出到文件: " << control_points_file << std::endl;
+        // std::cout << "控制点已输出到文件: " << control_points_file << std::endl;
     }
 
     return true;
+}
+
+/** 目标函数：最小化曲线长度与目标长度的差的绝对值
+ */
+double objective_function(const std::vector<double> &x, std::vector<double> &grad, void *data)
+{
+    OptData *opt_data = reinterpret_cast<OptData*>(data);
+    
+    // x[0]: 圆上的角度
+    // x[1]: d0 - 第一控制点距离
+    // x[2]: d3 - 最后控制点距离
+    
+    // 计算终点位置（在圆上）
+    double angle = x[0];
+    double target_x = opt_data->target_point->get_loc(0, 0);
+    double target_y = opt_data->target_point->get_loc(1, 0);
+    
+    Matrix p3(2, 1);
+    p3.set_vec2(target_x + opt_data->radius * cos(angle), 
+               target_y + opt_data->radius * sin(angle));
+    
+    // 计算控制点
+    Matrix p1(2, 1);
+    Matrix p2(2, 1);
+    p1.set_vec2(opt_data->p0->get_loc(0, 0) + x[1] * cos(opt_data->theta0), 
+               opt_data->p0->get_loc(1, 0) + x[1] * sin(opt_data->theta0));
+    p2.set_vec2(p3.get_loc(0, 0) + x[2] * cos(angle), 
+               p3.get_loc(1, 0) + x[2] * sin(angle));
+    
+    // 计算曲线长度
+    double curve_length = calculateBezierLength(*(opt_data->p0), p1, p2, p3, 500);
+    
+    // 如果需要梯度（某些算法需要），可以在这里计算
+    if (!grad.empty()) {
+        // 这里可以通过数值微分或解析方法计算梯度
+        // NLopt 可以使用无梯度算法
+    }
+    
+    // 返回目标函数值：曲线长度与目标长度的差的绝对值
+    return fabs(curve_length - opt_data->target_length);
+}
+
+/** 曲率约束函数：确保最大曲率不超过限制
+ */
+double constraint_function(const std::vector<double> &x, std::vector<double> &grad, void *data)
+{
+    OptData *opt_data = reinterpret_cast<OptData*>(data);
+    
+    // 计算终点和控制点，与目标函数相同
+    double angle = x[0];
+    double target_x = opt_data->target_point->get_loc(0, 0);
+    double target_y = opt_data->target_point->get_loc(1, 0);
+    
+    Matrix p3(2, 1);
+    p3.set_vec2(target_x + opt_data->radius * cos(angle), 
+               target_y + opt_data->radius * sin(angle));
+    
+    Matrix p1(2, 1);
+    Matrix p2(2, 1);
+    p1.set_vec2(opt_data->p0->get_loc(0, 0) + x[1] * cos(opt_data->theta0), 
+               opt_data->p0->get_loc(1, 0) + x[1] * sin(opt_data->theta0));
+    p2.set_vec2(p3.get_loc(0, 0) + x[2] * cos(angle), 
+               p3.get_loc(1, 0) + x[2] * sin(angle));
+    
+    // 计算最大曲率
+    double max_curvature = findMaxCurvature(*(opt_data->p0), p1, p2, p3, 0.01);
+    
+    // 返回约束值：曲率约束 max_curvature <= 1/r_min
+    // NLopt 约束必须是 <= 0 的形式，所以返回 max_curvature - 1/r_min
+    return max_curvature - 1.0/opt_data->r_min;
+}
+
+/**
+ * 在目标点固定距离圆上寻找最优终点和控制点参数（使用NLopt）
+ * 
+ * @param p0 起始点
+ * @param target_point 目标点
+ * @param radius 目标点所在圆半径
+ * @param theta0 起始航向角
+ * @param target_length 目标曲线长度
+ * @param r_min 最小转弯半径
+ * @return std::tuple<Matrix, Matrix, Matrix> 控制点和终点
+ */
+std::tuple<Matrix, Matrix, Matrix> findNLoptParameters_Circle(
+    const Matrix& p0,
+    const Matrix& target_point,
+    double radius,
+    double theta0,
+    double target_length,
+    double r_min,
+    nlopt::algorithm algo)
+{
+    // 设置优化问题数据
+    OptData opt_data;
+    opt_data.p0 = &p0;
+    opt_data.target_point = &target_point;
+    opt_data.radius = radius;
+    opt_data.theta0 = theta0;
+    opt_data.target_length = target_length;
+    opt_data.r_min = r_min;
+    
+    // 创建优化器，3个优化变量（角度、d0、d3）
+    // nlopt::opt optimizer(nlopt::LN_COBYLA, 3);
+    nlopt::opt optimizer(algo, 3);
+    
+    // 设置优化变量的范围
+    std::vector<double> lower_bounds(3);
+    std::vector<double> upper_bounds(3);
+    
+    // 角度范围 (PI/2 到 3PI/2)
+    lower_bounds[0] = PI / 2;
+    upper_bounds[0] = PI * 3 / 2;
+    
+    // d0 范围 (0 到 target_length)
+    lower_bounds[1] = 0.0;
+    upper_bounds[1] = target_length;
+    
+    // d3 范围 (0 到 target_length)
+    lower_bounds[2] = 0.0;
+    upper_bounds[2] = target_length;
+    
+    optimizer.set_lower_bounds(lower_bounds);
+    optimizer.set_upper_bounds(upper_bounds);
+    
+    // 设置目标函数
+    optimizer.set_min_objective(objective_function, &opt_data);
+    
+    // 添加曲率约束
+    optimizer.add_inequality_constraint(constraint_function, &opt_data, 1e-8);
+    
+    // 设置终止条件
+    optimizer.set_xtol_rel(1e-4);  // 相对误差 所有参数在连续迭代之间的相对变化都小于 0.01% 时
+    optimizer.set_maxeval(500);    // 最大评估次数
+    
+    // 设置初始猜测值（角度为中间值，d0和d3为中等值）
+    std::vector<double> x(3);
+    x[0] = PI;  // 中间角度
+    x[1] = target_length / 4;  // d0初始值
+    x[2] = target_length / 4;  // d3初始值
+    
+    // 存储最优函数值
+    double min_error;
+    
+    // 执行优化
+    nlopt::result result = optimizer.optimize(x, min_error);
+    
+    // 计算最优解的终点和控制点
+    double best_angle = x[0];
+    double best_d0 = x[1];
+    double best_d3 = x[2];
+    
+    double target_x = target_point[0];
+    double target_y = target_point[1];
+    
+    Matrix best_p3(2, 1);
+    Matrix p1(2, 1);
+    Matrix p2(2, 1);
+    
+    best_p3.set_vec2(target_x + radius * cos(best_angle), 
+                    target_y + radius * sin(best_angle));
+    
+    p1.set_vec2(p0[0] + best_d0 * cos(theta0), 
+                p0[1] + best_d0 * sin(theta0));
+    
+    p2.set_vec2(best_p3[0] + best_d3 * cos(best_angle), 
+                best_p3[1] + best_d3 * sin(best_angle));
+    
+    // 输出优化结果
+    printNLoptResult(result);
+    
+    std::cout << "最终结果: 终点角度 = " << best_angle * 180 / PI << "度, "
+                << "终点坐标 = (" << best_p3[0] << ", " << best_p3[1] << "), "
+                << "d0 = " << best_d0 << ", d3 = " << best_d3 
+                << ", 误差 = " << min_error << std::endl;
+    
+    // 验证曲率约束
+    // double max_curvature = findMaxCurvature(p0, p1, p2, best_p3, 0.01);
+    // double min_radius = 1.0 / max_curvature;
+    // std::cout << "最大曲率 = " << max_curvature 
+    //             << ", 最小曲率半径 = " << min_radius 
+    //             << " (约束: >= " << r_min << ")" << std::endl;
+    
+    return std::make_tuple(p1, p2, best_p3);
+}
+
+const char* nloptResultToString(nlopt::result result) {
+    switch(static_cast<int>(result)) {
+        case 1: return "SUCCESS";
+        case 2: return "STOPVAL_REACHED";
+        case 3: return "FTOL_REACHED";
+        case 4: return "XTOL_REACHED";
+        case 5: return "MAXEVAL_REACHED";
+        case -1: return "FAILURE";
+        case -2: return "INVALID_ARGS";
+        case -3: return "OUT_OF_MEMORY";
+        case -4: return "ROUNDOFF_LIMITED";
+        case -5: return "FORCED_STOP";
+        default: return "UNKNOWN";
+    }
+}
+
+void printNLoptResult(nlopt::result result) {
+    std::cout << "NLopt 优化结果: " << nloptResultToString(result) << std::endl;
 }

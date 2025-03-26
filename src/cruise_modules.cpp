@@ -1955,6 +1955,7 @@ double Cruise::control_load(double ancomx,double int_step)
 }
 ///////////////////////////////////////////////////////////////////////////////
 //Lateral acceleration controller
+//input: alcomx, lateral acceleration command - g's
 //
 //return output: phicx, bank command - deg
 //
@@ -1980,28 +1981,30 @@ double Cruise::control_lateral(double alcomx)
 	
 	//localizing module-variables
 	//input data
-	double allimx=cruise[72].real();
-	double phimvx=cruise[52].real();
-	double alphax=cruise[51].real();
-	double gcp=cruise[73].real();
+	double allimx=cruise[72].real();  // 横向加速度限制
+	double phimvx=cruise[52].real();  // 倾斜角
+	double alphax=cruise[51].real();  // 攻击角(迎角、机体轴和速度的夹角、向上为正)
+	double gcp=cruise[73].real();  // 横向滚转增益
 	//input from other modules
-	Matrix FSPV=round3[10].vec();
-	double grav=round3[11].real();
+	Matrix FSPV=round3[10].vec();  // 速度坐标中的比力/加速度(m/s^2)
+	double grav=round3[11].real();  // 重力加速度(m/s^2)
 	//-------------------------------------------------------------------------
-	//tranforming specific force to body coordinates
+	//tranforming specific force to body coordinates(m/s^2)
+	//速度系->机体系
 	alpha=alphax*RAD;
 	phimv=phimvx*RAD;
 	TBV=cadtbv(phimv,alpha);
-	FSPB=TBV*FSPV;
+	FSPB=TBV*FSPV;  // 机体系下的加速度分量
 	//normal load factor
-	fspb3=FSPB.get_loc(2,0);
-	anx=-fspb3/grav;
+	fspb3=FSPB.get_loc(2,0);  // 法向加速度
+	anx=-fspb3/grav;  // 法向过载
 
 	//limiting lateral load factor command
 	if(alcomx>allimx) alcomx=allimx;
 	if(alcomx<-allimx) alcomx=-allimx;
 
 	//commanded bank angle
+	//将侧向加速度指令转换为倾斜角指令
 	if(anx>=0)sign=1;
 	else sign=-1;
 	phic=gcp*sign/(fabs(anx)+.001)*alcomx;

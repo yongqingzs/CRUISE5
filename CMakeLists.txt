@@ -32,7 +32,12 @@ set(BEZIERS
     src/utility_functions.cpp
 )
 
+# 查找 NLopt 包
+find_package(NLopt REQUIRED)
+
 # 创建可执行文件
 add_executable(Cruise5 ${SOURCES})
 
 add_executable(BezierDemo ${BEZIERS})
+
+target_link_libraries(BezierDemo ${NLOPT_LIBRARIES})

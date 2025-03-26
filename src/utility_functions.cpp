@@ -451,6 +451,15 @@ double Matrix::get_loc(const int &r,const int &c)
 
 }
 
+double Matrix::get_loc(const int &r,const int &c) const
+{
+	if((r<num_row)&&(c<num_col))
+	return *(pbody+r*num_col+c);		
+	else
+	{cout<<"*** Error: invalid matrix location 'Matrix::get_loc()' *** ";exit(1);}
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //Returns the number of rows in the matrix
 //Example: nr = MAT.get_rows();

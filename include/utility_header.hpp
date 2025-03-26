@@ -151,6 +151,8 @@ public:
 	//Example: value = MAT.get_loc(2,1); (3rd row, 2nd column)
 	double get_loc(const int &r,const int &c);
 
+	double get_loc(const int &r,const int &c) const;
+
 	//Returns the pointer to MAT
 	//Example: ptr = MAT.get_pbody();
 	double * get_pbody();
